@@ -114,7 +114,7 @@ def get_event_details(id):
 
     print(events.keys())
     #gets the list of venues from nested events dict
-    venues_list = [venue['name'] for venue in events.get('_embedded', 'not found')]
+    venues_list = [venue['name'] for venue in events['_embedded']['venues']]
 
 
     event_url = events['url']
