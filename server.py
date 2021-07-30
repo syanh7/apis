@@ -44,8 +44,16 @@ def find_afterparties():
     unit = request.args.get('unit', '')
     sort = request.args.get('sort', '')
 
+
     url = 'https://app.ticketmaster.com/discovery/v2/events'
-    payload = {'apikey': API_KEY}
+    payload = {'apikey': API_KEY,
+                'keyword':keyword,
+                'postalCode':postalcode,
+                'radius':radius,
+                'unit':unit,
+                'sort':sort}
+
+
 
     # TODO: Make a request to the Event Search endpoint to search for events
     #
@@ -58,9 +66,19 @@ def find_afterparties():
     # - Replace the empty list in `events` with the list of events from your
     #   search results
 
-    data = {'Test': ['This is just some test data'],
-            'page': {'totalElements': 1}}
-    events = []
+    #res is a Response object
+    res = requests.get(url, params=payload)
+    #turn the Response object to a dict object
+    data = res.json()
+    if data['page']['totalElements'] == 0:
+        return render_template('search-results.html',
+                           pformat=pformat,
+                           data=data,
+                           results='')
+    #get the events value from the data dict using keys
+    events = data['_embedded']['events']
+
+    
 
     return render_template('search-results.html',
                            pformat=pformat,
@@ -78,8 +96,47 @@ def get_event_details(id):
     """View the details of an event."""
 
     # TODO: Finish implementing this view function
+    url = 'https://app.ticketmaster.com/discovery/v2/events'
+    payload = {'apikey': API_KEY, 'id':id}
+     #res is a Response object
+    res = requests.get(url, params=payload)
+    #turn the Response object to a dict object
+    data = res.json()
+    #get the events value from the data dict using keys
 
-    return render_template('event-details.html')
+    events = data['_embedded']['events'][0]
+
+    #gets all image urls
+    img_url = events['images'][2]['url']
+
+    #gets the name of event
+    event_name = events['name']
+
+    print(events.keys())
+    #gets the list of venues from nested events dict
+    venues_list = [venue['name'] for venue in events.get('_embedded', 'not found')]
+
+
+    event_url = events['url']
+
+    classifications = events['classifications'][0]
+    classifications_list = []
+
+    for key in classifications.keys():
+        if type(classifications[key]) is not bool:
+            classifications_list.append(classifications[key]['name'])
+
+    start_date = events['dates']['start']['localDate']
+
+    description = events.get('info', 'no description provided')
+    return render_template('event-details.html', 
+                            img_url = img_url, 
+                            event_name = event_name,
+                            venues_list=venues_list,
+                            classifications_list = classifications_list,
+                            start_date=start_date,
+                            event_url = event_url,
+                            description = description)#, event=event,)
 
 
 if __name__ == '__main__':
